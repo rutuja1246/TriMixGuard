@@ -1,0 +1,40 @@
+name: TriMixGuard CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Run automated checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Check Python syntax
+        run: |
+          python -m py_compile app.py predictor.py transliterator.py
+          python -m py_compile tests/test_predictor.py
+
+            - name: Check for trailing whitespace
+        run: |
+          python -c "from pathlib import Path; files = [Path('app.py'), Path('predictor.py'), Path('transliterator.py'), Path('tests/test_predictor.py')]; bad = [(str(p), i) for p in files for i, line in enumerate(p.read_text(encoding='utf-8').splitlines(), 1) if line.rstrip() != line]; print('\n'.join(f'{p}:{i}: trailing whitespace' for p, i in bad)); raise SystemExit(bool(bad))"
+
+      - name: Run pytest
+        run: python -m pytest -v
